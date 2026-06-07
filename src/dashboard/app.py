@@ -31,37 +31,53 @@ rule_engine = RuleEngine()
 # ----------------------------
 # DATA FETCH (Safeguarded for Cloud)
 # ----------------------------
-@st.cache_data(ttl=300)  # Cache data for 5 minutes so it stays incredibly fast
+# ----------------------------
+# SAFE CACHED DATA FETCH
+# ----------------------------
+@st.cache_data(ttl=300)  # Cache data for 5 minutes
 def load_market_data():
+    print("🚀 DEBUG: Initializing Cloud-Safe Data Fetch...")
+    
     try:
+        print("🚀 DEBUG: Fetching FRED data...")
         y_data = fred.get_real_yield()
     except Exception as e:
+        print(f"❌ DEBUG ERROR (FRED): {e}")
         y_data = {"value": "N/A (API Error)"}
         
     try:
+        print("🚀 DEBUG: Fetching Market USDINR data...")
         u_inr = market.get_usdinr()
     except Exception as e:
+        print(f"❌ DEBUG ERROR (USDINR): {e}")
         u_inr = {"value": "N/A (API Error)"}
         
     try:
+        print("🚀 DEBUG: Fetching Gold data...")
         g_price = market.get_gold_price()
     except Exception as e:
+        print(f"❌ DEBUG ERROR (Gold): {e}")
         g_price = {"value": "N/A (API Error)"}
         
     try:
+        print("🚀 DEBUG: Computing Correlation Engine Score...")
         corr = engine.compute()
     except Exception as e:
+        print(f"❌ DEBUG ERROR (Correlation): {e}")
         corr = {"score": 0}
         
+    print("🚀 DEBUG: All data processes executed.")
     return y_data, u_inr, g_price, corr
 
-# Execute the cloud-safe data fetch
+# 1. Execute the cloud-safe data fetch cleanly
 yield_data, usdinr, gold, correlation = load_market_data()
 
-# Check for active alerts evaluated by the rule engine
+# 2. Evaluate rules safely
 try:
+    print("🚀 DEBUG: Evaluating Rule Engine Alerts...")
     alerts = rule_engine.evaluate()
 except Exception as e:
+    print(f"❌ DEBUG ERROR (Rule Engine): {e}")
     alerts = []
     st.sidebar.error(f"Rule Engine Error: {e}")
     
