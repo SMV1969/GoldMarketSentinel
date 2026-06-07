@@ -52,23 +52,19 @@ current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 # ----------------------------
 col1, col2, col3 = st.columns(3)
 
-# US Yield
-#with col1:
-#    st.metric("US Real Yield (%)", data["yield"].get("value", "N/A"))
-# Define the note
-    yield_note = (
-    "US Real Yield = Nominal Treasury Yield - Expected Inflation. "
-    "It represents the 'true' cost of borrowing. When this rises, "
-    "it acts as a headwind for Gold and Stocks, as bonds become "
-    "more attractive on an inflation-adjusted basis."
-)
-
+# US Yield (Corrected Block)
 with col1:
+    yield_note = (
+        "US Real Yield = Nominal Treasury Yield - Expected Inflation. "
+        "It represents the 'true' cost of borrowing. When this rises, "
+        "it acts as a headwind for Gold and Stocks, as bonds become "
+        "more attractive on an inflation-adjusted basis."
+    )
     st.metric(
         label="US Real Yield (%)", 
         value=data["yield"].get("value", "N/A"),
-        help=yield_note  # This adds the "!" tooltip icon
-    )    
+        help=yield_note
+    )
 
 # USDINR
 with col2:
@@ -87,9 +83,6 @@ with col3:
         st.metric("Gold (USD) [Spot Proxy]", f"${spot_proxy:,.2f}", help=tooltip)
     else:
         st.metric("Gold (USD)", "N/A")
-# --- UPDATE THIS SECTION IN app.py ---
-
-
 
 st.divider()
 
