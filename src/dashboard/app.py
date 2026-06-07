@@ -38,8 +38,8 @@ rule_engine = RuleEngine()
 # ----------------------------
 # SAFE CACHED DATA FETCH FUNCTION
 # ----------------------------
-# @st.cache_data(ttl=3600)  # Cache data for 5 minutes to stay incredibly fast
-@st.cache_data(ttl=86400)  # 24 hours = 86400 seconds. This is the fix.
+@st.cache_data(ttl=3600)  # Cache data for 5 minutes to stay incredibly fast
+#@st.cache_data(ttl=86400)  # 24 hours = 86400 seconds. This is the fix.
 def load_market_data():
     print("🚀 DEBUG: Initializing Cloud-Safe Data Fetch...")
     
