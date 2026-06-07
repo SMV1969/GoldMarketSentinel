@@ -48,13 +48,38 @@ rule_engine = RuleEngine()
 # ----------------------------
 @st.cache_data(ttl=60)
 def load_market_data():
-    data = {
-        "yield": fred.get_real_yield(),
-        "usdinr": market.get_usdinr(),
-        "gold": market.get_gold_price(),
-        "corr": engine.compute()
-    }
+    data = {}
+
+    # 1. Safe fetch for US Yield (FRED)
+    try:
+        data["yield"] = fred.get_real_yield()
+    except Exception as e:
+        print(f"❌ FRED API Error: {e}")
+        data["yield"] = {"value": "N/A"}
+
+    # 2. Safe fetch for USDINR
+    try:
+        data["usdinr"] = market.get_usdinr()
+    except Exception as e:
+        print(f"❌ USDINR API Error: {e}")
+        data["usdinr"] = {"value": "N/A"}
+
+    # 3. Safe fetch for Gold
+    try:
+        data["gold"] = market.get_gold_price()
+    except Exception as e:
+        print(f"❌ Gold API Error: {e}")
+        data["gold"] = {"value": "N/A"}
+
+    # 4. Safe compute for Correlation
+    try:
+        data["corr"] = engine.compute()
+    except Exception as e:
+        print(f"❌ Correlation Engine Error: {e}")
+        data["corr"] = {"score": 0}
+
     return data
+   
 
 # Execute
 data = load_market_data()
