@@ -1,5 +1,6 @@
 import os
 import sys
+from datetime import datetime
 
 # 1. ALWAYS set up your paths before importing local modules
 root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -7,15 +8,24 @@ if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
+
+# Import your custom modules safely
 from src.fred_client import FredClient
 from src.market_client import MarketClient
 from src.correlation_engine import CorrelationEngine
 from src.rule_engine import RuleEngine
 from src.alert_store import alert_already_sent, save_alert
 
+# ----------------------------
+# STREAMLIT PAGE CONFIG & AUTO-REFRESH
+# ----------------------------
 st.set_page_config(page_title="Market Sentinel Dashboard", layout="wide")
 
 st.title("📊 Market Sentinel Live Dashboard")
+
+# Automatically refresh the visual layout on the web server every 5 minutes (300,000 milliseconds)
+st_autorefresh(interval=300000, key="datarefresh")
 
 # ----------------------------
 # INIT COMPONENTS
@@ -26,15 +36,9 @@ engine = CorrelationEngine()
 rule_engine = RuleEngine()
 
 # ----------------------------
-# DATA FETCH
+# SAFE CACHED DATA FETCH FUNCTION
 # ----------------------------
-# ----------------------------
-# DATA FETCH (Safeguarded for Cloud)
-# ----------------------------
-# ----------------------------
-# SAFE CACHED DATA FETCH
-# ----------------------------
-@st.cache_data(ttl=300)  # Cache data for 5 minutes
+@st.cache_data(ttl=300)  # Cache data for 5 minutes to stay incredibly fast
 def load_market_data():
     print("🚀 DEBUG: Initializing Cloud-Safe Data Fetch...")
     
@@ -66,13 +70,20 @@ def load_market_data():
         print(f"❌ DEBUG ERROR (Correlation): {e}")
         corr = {"score": 0}
         
-    print("🚀 DEBUG: All data processes executed.")
+    print("🚀 DEBUG: All data processes executed successfully.")
     return y_data, u_inr, g_price, corr
+
+# ----------------------------
+# EXECUTE DATA & RULE ENGINES
+# ----------------------------
 
 # 1. Execute the cloud-safe data fetch cleanly
 yield_data, usdinr, gold, correlation = load_market_data()
 
-# 2. Evaluate rules safely
+# 2. Capture the exact timestamp when this web execution completed
+current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+# 3. Evaluate rules safely inside a protective block
 try:
     print("🚀 DEBUG: Evaluating Rule Engine Alerts...")
     alerts = rule_engine.evaluate()
@@ -80,17 +91,9 @@ except Exception as e:
     print(f"❌ DEBUG ERROR (Rule Engine): {e}")
     alerts = []
     st.sidebar.error(f"Rule Engine Error: {e}")
-    
-# yield_data = fred.get_real_yield()
-# usdinr = market.get_usdinr()
-# gold = market.get_gold_price()
-# correlation = engine.compute()
-
-# Check for active alerts evaluated by the rule engine
-alerts = rule_engine.evaluate()
 
 # ----------------------------
-# LAYOUT
+# DASHBOARD VISUAL LAYOUT
 # ----------------------------
 col1, col2, col3 = st.columns(3)
 
@@ -106,7 +109,7 @@ with col3:
 st.divider()
 
 # ----------------------------
-# CORRELATION SCORE
+# CORRELATION SCORE VISUAL
 # ----------------------------
 st.subheader("📈 Correlation Engine Score")
 
@@ -143,7 +146,7 @@ if alerts:
             "message": alert['message']
         }
         
-        # If it hasn't been sent before, save it now!
+        # If it hasn't been sent before, try to save it
         if not was_sent_before:
             save_alert(alert_key)
 else:
@@ -152,17 +155,15 @@ else:
 st.divider()
 
 # ----------------------------
-# ALERT STATE LOGS
+# ALERT STATE LOGS HISTORY VISUAL
 # ----------------------------
 st.subheader("📌 Evaluated Alerts JSON History Status")
 
 if alert_sent_status:
     for alert_name, info in alert_sent_status.items():
-        # Create a visually clean container for each alert status
         with st.container(border=True):
             st.markdown(f"### **🟢 {alert_name}**")
             
-            # Show a formatted badge based on whether it was already logged
             if info["already_logged_in_json"]:
                 st.info("ℹ️ **Status:** Already saved in system logs (`alerts.json`)")
             else:
@@ -171,9 +172,15 @@ if alert_sent_status:
             st.markdown(f"**Log Message:** \n*{info['message']}*")
 else:
     st.info("No active rule engine alerts to track right now.")
-    
-    
+
+st.divider()
+
 # ----------------------------
-# MANUAL REFRESH
+# TELEMETRY AND REFRESH CONTROLS
 # ----------------------------
-st.button("🔄 Refresh Dashboard")
+# Visually maps out exactly when the last background network request occurred
+st.markdown(f"⏱️ **Webserver Cache Last Refreshed at:** `{current_time} UTC` (Auto-refreshes every 5 mins)")
+
+if st.button("🔄 Force Manual Refresh Now"):
+    st.cache_data.clear()
+    st.rerun()
