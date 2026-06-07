@@ -1,24 +1,26 @@
 import yfinance as yf
 
 class MarketClient:
-    """
-    Direct live data client using Yahoo Finance.
-    """
-
     def get_usdinr(self):
         try:
             ticker = yf.Ticker("INR=X")
             data = ticker.history(period="1d")
-            return {"value": round(data['Close'].iloc[-1], 2) if not data.empty else 0.0}
+            if data.empty:
+                print("DEBUG: YFinance USDINR returned empty data.")
+                return {"value": 0.0}
+            return {"value": round(data['Close'].iloc[-1], 2)}
         except Exception as e:
-            print(f"Error fetching USDINR: {e}")
+            print(f"DEBUG CRITICAL: USDINR failure: {str(e)}") # This will print the actual error
             return {"value": 0.0}
 
     def get_gold_price(self):
         try:
             ticker = yf.Ticker("GC=F")
             data = ticker.history(period="1d")
-            return {"value": round(data['Close'].iloc[-1], 2) if not data.empty else 0.0}
+            if data.empty:
+                print("DEBUG: YFinance Gold returned empty data.")
+                return {"value": 0.0}
+            return {"value": round(data['Close'].iloc[-1], 2)}
         except Exception as e:
-            print(f"Error fetching Gold: {e}")
+            print(f"DEBUG CRITICAL: Gold failure: {str(e)}") # This will print the actual error
             return {"value": 0.0}
