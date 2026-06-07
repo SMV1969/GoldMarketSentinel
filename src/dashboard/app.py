@@ -2,6 +2,7 @@ import os
 import sys
 from datetime import datetime
 
+
 # 1. Path Setup
 root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if root_path not in sys.path:
@@ -20,7 +21,19 @@ from src.alert_store import alert_already_sent, save_alert
 # ----------------------------
 # PAGE CONFIG
 # ----------------------------
+
 st.set_page_config(page_title="Market Sentinel", layout="wide")
+# --- PASTE THE HIDE CODE HERE ---
+hide_streamlit_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            </style>
+            """
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+# -------------------------------
+
 st.title("📊 Market Sentinel Live Dashboard")
 st_autorefresh(interval=300000, key="datarefresh") # 5 min refresh
 
