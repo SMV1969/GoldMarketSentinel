@@ -28,10 +28,47 @@ rule_engine = RuleEngine()
 # ----------------------------
 # DATA FETCH
 # ----------------------------
-yield_data = fred.get_real_yield()
-usdinr = market.get_usdinr()
-gold = market.get_gold_price()
-correlation = engine.compute()
+# ----------------------------
+# DATA FETCH (Safeguarded for Cloud)
+# ----------------------------
+@st.cache_data(ttl=300)  # Cache data for 5 minutes so it stays incredibly fast
+def load_market_data():
+    try:
+        y_data = fred.get_real_yield()
+    except Exception as e:
+        y_data = {"value": "N/A (API Error)"}
+        
+    try:
+        u_inr = market.get_usdinr()
+    except Exception as e:
+        u_inr = {"value": "N/A (API Error)"}
+        
+    try:
+        g_price = market.get_gold_price()
+    except Exception as e:
+        g_price = {"value": "N/A (API Error)"}
+        
+    try:
+        corr = engine.compute()
+    except Exception as e:
+        corr = {"score": 0}
+        
+    return y_data, u_inr, g_price, corr
+
+# Execute the cloud-safe data fetch
+yield_data, usdinr, gold, correlation = load_market_data()
+
+# Check for active alerts evaluated by the rule engine
+try:
+    alerts = rule_engine.evaluate()
+except Exception as e:
+    alerts = []
+    st.sidebar.error(f"Rule Engine Error: {e}")
+    
+# yield_data = fred.get_real_yield()
+# usdinr = market.get_usdinr()
+# gold = market.get_gold_price()
+# correlation = engine.compute()
 
 # Check for active alerts evaluated by the rule engine
 alerts = rule_engine.evaluate()
