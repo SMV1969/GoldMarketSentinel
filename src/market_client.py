@@ -1,38 +1,39 @@
 import yfinance as yf
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class MarketClient:
-    def get_usdinr(self):
+    def __init__(self):
+        # Create a persistent session
+        self.session = yf.shared.get_session()
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        })
+
+    def _get_last_price(self, symbol):
+        """Helper to fetch the last valid closing price."""
         try:
-            # Forex data often requires a specific lookback
-            ticker = yf.Ticker("INR=X")
-            data = ticker.history(period="2d") # Fetch 2 days to be safe
+            # We fetch 1 month of data to ensure we have a valid last close
+            ticker = yf.Ticker(symbol, session=self.session)
+            data = ticker.history(period="1mo")
             
             if data.empty or 'Close' not in data:
-                print("DEBUG: USDINR data is empty.")
-                return {"value": "N/A"}
+                logger.warning(f"No data returned for {symbol}")
+                return None
             
-            latest_val = data['Close'].iloc[-1]
-            return {"value": round(float(latest_val), 2)}
+            # Get the last non-empty closing price
+            last_price = data['Close'].dropna().iloc[-1]
+            return round(float(last_price), 2)
         except Exception as e:
-            print(f"DEBUG: USDINR Error: {e}")
-            return {"value": "N/A"}
+            logger.error(f"Error fetching {symbol}: {e}")
+            return None
+
+    def get_usdinr(self):
+        val = self._get_last_price("INR=X")
+        return {"value": val if val is not None else "N/A"}
 
     def get_gold_price(self):
-        try:
-            ticker = yf.Ticker("GLD")
-            data = ticker.history(period="5d")
-            
-            if data.empty or 'Close' not in data:
-                print("DEBUG: Gold data is empty.")
-                return {"value": "N/A"}
-                
-            # Safely get the last valid price
-            valid_data = data['Close'].dropna()
-            if valid_data.empty:
-                return {"value": "N/A"}
-                
-            latest_val = valid_data.iloc[-1]
-            return {"value": round(float(latest_val), 2)}
-        except Exception as e:
-            print(f"DEBUG: Gold Error: {e}")
-            return {"value": "N/A"}
+        val = self._get_last_price("GLD")
+        return {"value": val if val is not None else "N/A"}
